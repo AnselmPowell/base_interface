@@ -2678,10 +2678,155 @@ CSRF_TRUSTED_ORIGINS = [
 - As soon as you make the commit, a new delopment should be automatically triggered on railway. 
 
 
+
 ### Step 4: Prepare Your Frontend (NextJS) for Deployment
 
+1. Update your `next.config.js` file in the root of your Next.js project to include the new backend URL:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.DJANGO_BASE_URL || 'https://your-backend-url.railway.app'}/api/:path*`,
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;
+```
+
+- Replace `'https://your-backend-url.railway.app'` with the actual URL of your deployed Django backend on Railway.
+
+2. Update your `.env` file in the root of your Next.js project:
+- Again, replace `https://your-backend-url.railway.app` with your actual backend URL from Railway.
+
+```bash
+DJANGO_BASE_URL=https://your-backend-url.railway.app
+```
 
 
+3. Create a `Dockerfile` in the root of your Next.js project:
+
+```Dockerfile
+# Use the official Node.js 18 image as a parent image
+FROM node:18-alpine
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy the rest of your app's source code
+COPY . .
+
+# Build your Next.js app
+RUN npm run build
+
+# Expose the port Next.js runs on
+EXPOSE 3000
+
+# Start the app
+CMD ["npm", "start"]
+```
+
+4. Create a `.dockerignore` file in the root of your Next.js project:
+
+```
+node_modules
+.next
+.git
+```
+
+5. Create a `railway.toml` file in the root of your Next.js project:
+
+```toml
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "npm start"
+
+[[services]]
+name = "web"
+```
+
+6. Commit these changes to your Git repository:
+
+```bash
+git add .
+git commit -m "Prepare for Railway deployment"
+git push origin master
+```
+
+
+7. Delete your `.next` folder in your root directory from your project. 
+- This is temporarily as when you **run build** it will come back
+
+8. Before deploying to github to have Railway run the build process, lets make sure everything is running smoothly by running it locally first 
+
+```bash
+npm run build 
+```
+
+Now that it has shown to build successfully, if you run `npm run dev` and **turn off** your local backend project server. You should still be connected to the data as you will now be connected to the deployed backend database. 
+
+Your frontend is prepared for deployment to Railway. The next step will be to deploy it, similar to how you deployed the backend. Here's what you'll do.
+
+
+### Step 5: Deploy Frontend to Railway
+
+1. Go to Railway and create a new project.
+2. Choose "Deploy from GitHub repo" and select your frontend repository.
+3. Railway should automatically detect your `Dockerfile` and use it for deployment and the build process.
+4. Add the following environment variable: Key: **"DJANGO_BASE_URL"**, Value: Your backend's Railway URL (e.g., **"https://your-backend-url.railway.app"**)
+5. Add a **"PORT"** for your frontend appliacation to run on. common port is **"8080"**
+
+```bash
+   | Key                   |  Value                        |
+   |-----------------------|--------------------------------------------|
+   | DJANGO_BASE_URL      | https://your-backend-url.railway.app        |
+   | PORT                  | 8080                                       |
+
+
+``` 
+
+6. After deployment, Railway will provide you with a URL for your frontend application. Simular to the backend. Go to the **Setting** tab and go to **Networking**, under **Public Networking** click ***Genarate Service Domain***
+- You should see something like:
+
+```bash 
+baseinterface-production.up.railway.app
+```
+
+7. Now clcik ***Deploy*** again and redeploy the appliacation with the new port and updated variables. 
+
+5. Deploy your project.
+
+After deployment, Railway will provide you with a URL for your frontend application. You can use this to access your full-stack application, with the frontend communicating with your backend API.
+
+Remember to update your backend's CORS settings to allow requests from your new frontend URL:
+
+In your Django `settings.py`:
+
+```python
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://your-frontend-url.railway.app",
+]
+```
+
+Then commit and push these changes to trigger a redeployment of your backend.
+
+With these steps, both your frontend and backend should be deployed on Railway and communicating with each other. Your full-stack application is now live and accessible on the web!
 
 
 

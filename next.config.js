@@ -1,3 +1,18 @@
+// /** @type {import('next').NextConfig} */
+// const nextConfig = {
+//   reactStrictMode: true,
+//   async rewrites() {
+//     return [
+//       {
+//         source: '/api/:path*',
+//         destination: `${process.env.DJANGO_BASE_URL}/:path*`,
+//       },
+//     ];
+//   },
+// };
+
+// module.exports = nextConfig;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -5,7 +20,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.DJANGO_BASE_URL}/:path*`,
+        destination: `${process.env.DJANGO_BASE_URL || 'https://web-production-040d2.up.railway.app'}/api/:path*`,
       },
     ];
   },
